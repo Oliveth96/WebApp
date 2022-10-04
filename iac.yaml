@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Build a stack that creates EC2 Instances with mySQL database
+Resources:
+  myWebAppDBInstance:
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: ami-0d5eff06f840b45e9
+      InstanceType: t2.micro
+      KeyName: myWebApp
+      SecurityGroupIds:
+        - !Ref WebAppAndDBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [myWebAppDB, prod]]
+
+Description: A Secure mySQL DB alongside the EC2 Instances
+Resources:
+  MysqlDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: 
+        Default: 'MysqlDBInstance007'
+        Description: "Name of the Amazon Aurora database."
+        MaxLength: "63"
+        MinLength: "5"
+        Type: String
+      Engine: mysql
+      MasterUsername:
+        AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+        ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters."
+        Default: Admin
+        Description: "Administrator user name for the database account."
+        MaxLength: "16"
+        MinLength: "1"
+        Type: String
+      DBInstanceClass: db.t3.micro
+      DBSecurityGroups:
+        - Ref: DBSecurityGroup
+      AllocatedStorage: 20GiB
+      LicenseModel: "general-public-license"
+      MasterUserPassword: 
+        AllowedPattern: ^(?=^.{8,255}$)(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])(?!.*[@/"']).*$
+        ConstraintDescription: "Min 8 chars. Must include 1 uppercase, 1 lowercase, 1 number, 1 (non / @ \" ') symbol"
+        Description: "Administrator password for the database account. Minimum 8 characters. Must include 1 uppercase, 1 lowercase, 1 number, 1 symbol (not / @ \" ')."
+        MaxLength: "64"
+        MinLength: "8"
+        NoEcho: "True"
+        Type: String
+      PubliclyAccessible: false
+      StorageType: standard
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [myWebDB, dev]]
+  DBSecurityGroup:
+    Type: AWS::RDS::DBSecurityGroup
+    Properties:
+      GroupDescription: "A secure MySQL DataBase"
+      DBSecurityGroupIngress:
+        EC2SecurityGroupName:
+          Ref: WebAppAndDBSecurityGroup
+  WebAppAndDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ['-',[secureweb-andDB-group, prod]] 
+      GroupDescription: "Enable HTTP/HTTPS and SSH Inbound and Outbound Traffic"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+  
